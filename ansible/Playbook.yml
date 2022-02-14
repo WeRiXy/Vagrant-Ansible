@@ -1,0 +1,39 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: Copy from github
+    ansible.builtin.git:
+      repo: "https://github.com/anfederico/flaskex.git"
+      dest: /home/vagrant/flaskex
+      force: yes
+  - name: "Install PIP3"
+    apt:
+      name: python3-pip
+      update_cache: yes
+  - name: install requirements
+    pip:
+      requirements: /home/vagrant/flaskex/requirements.txt
+  - name: bug fix
+    replace: 
+      path: /home/vagrant/flaskex/scripts/forms.py
+      regexp: 'required'
+      replace: 'DataRequired'
+  - template:
+      src: flaskapp.service.j2
+      dest: /etc/systemd/system/flaskapp.service
+      owner: "vagrant"
+      group: "vagrant"
+      mode: "0644"
+  - name: gunicorn start
+    ansible.builtin.shell: "gunicorn app:app -b {{ ansible_ssh_host }}:5000 -w 3"
+    args:
+      chdir: /home/vagrant/flaskex
+    async: 10
+    poll: 0
+  - name: Start flaskapp.service
+    ansible.builtin.systemd:
+      daemon_reload: yes
+      name: flaskapp.service
+      state: started
+      enabled: yes

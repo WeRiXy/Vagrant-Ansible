@@ -1,0 +1,11 @@
+[Unit]
+Description=flaskapp
+After=network.target
+
+[Service]
+User=vagrant
+WorkingDirectory=/flaskex
+ExecStart=/bin/bash -c "/usr/local/bin/gunicorn  app:app -b {{ ansible_ssh_host }}:8080 -w 3"
+
+[Install]
+WantedBy=multi-user.target
